@@ -31,6 +31,7 @@ test('login uses HttpOnly secure cookies; data excludes password hashes',async()
   const r=await request('/login',{method:'POST',body:new URLSearchParams({login:'test-admin',password:'test-password'}),redirect:'manual'});
   assert.equal(r.status,303);const set=r.headers.get('set-cookie');assert.match(set,/HttpOnly/);assert.match(set,/Secure/);
   cookie=set.split(';')[0];const s=await state();assert.equal(s.data.users.length,3);assert.equal(s.data.users[0].passHash,undefined);
+  assert.equal(s.data.users[0].hasPassword,true);
   const html=await(await request('/')).text();assert.match(html,/window.__GF_CLOUD__/);assert.ok(!html.includes('<!--CLOUD_BOOTSTRAP-->'));assert.ok(!html.includes(legacyHash('test-password','test-salt')));
 });
 test('cross-origin mutations are rejected',async()=>{
@@ -72,4 +73,26 @@ test('viewer cannot write; a duplicate login rolls back the entire batch',async(
   const admin=s.data.users.find(x=>x.id==='admin');
   const r=await change(s.revision,[{collection:'works',id:'rollback',value:{id:'rollback'}},{collection:'users',id:'duplicate',value:{...admin,id:'duplicate',salt:'test-salt',passHash:legacyHash('test-password','test-salt')}}]);
   assert.equal(r.status,503);const after=await state();assert.equal(after.revision,s.revision);assert.ok(!after.data.works.find(x=>x.id==='rollback'));
+});
+test('admin can replace a user password; the old password and session stop working',async()=>{
+  let s=await state(),u=s.data.users.find(x=>x.id==='other');u.blocked=false;
+  assert.equal((await change(s.revision,[{collection:'users',id:u.id,value:u}])).status,200);
+  const before=await request('/login',{method:'POST',body:new URLSearchParams({login:'test-other',password:'test-password'}),redirect:'manual'});
+  const oldCookie=before.headers.get('set-cookie').split(';')[0];
+  s=await state();u=s.data.users.find(x=>x.id==='other');u.salt='new-salt';u.passHash=legacyHash('replacement-password',u.salt);
+  assert.equal((await change(s.revision,[{collection:'users',id:u.id,value:u}])).status,200);
+  assert.equal((await request('/api/state',{headers:{Cookie:oldCookie}})).status,401);
+  const wrong=await request('/login',{method:'POST',body:new URLSearchParams({login:'test-other',password:'test-password'}),redirect:'manual'});
+  assert.equal(wrong.headers.get('set-cookie'),null);
+  const good=await request('/login',{method:'POST',body:new URLSearchParams({login:'test-other',password:'replacement-password'}),redirect:'manual'});
+  assert.equal(good.status,303);assert.ok(good.headers.get('set-cookie'));
+});
+test('changing own password preserves this session and revokes other sessions',async()=>{
+  const another=await request('/login',{method:'POST',body:new URLSearchParams({login:'test-admin',password:'test-password'}),redirect:'manual'});
+  const oldCookie=another.headers.get('set-cookie').split(';')[0];
+  const s=await state(),u=s.data.users.find(x=>x.id==='admin');u.salt='own-salt';u.passHash=legacyHash('own-new-password',u.salt);
+  assert.equal((await change(s.revision,[{collection:'users',id:u.id,value:u}])).status,200);
+  assert.equal((await request('/api/state')).status,200);
+  assert.equal((await request('/api/state',{headers:{Cookie:oldCookie}})).status,401);
+  const safe=(await state()).data.users.find(x=>x.id==='admin');assert.equal(safe.hasPassword,true);assert.equal(safe.passHash,undefined);
 });

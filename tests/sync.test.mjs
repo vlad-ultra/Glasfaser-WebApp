@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {clone,merge,diff,apply} from '../cloud/shared.mjs';
-import {legacyHash,checkPassword} from '../cloud/auth.mjs';
+import {legacyHash,checkPassword,publicUser} from '../cloud/auth.mjs';
 
 test('independent fields on the same record survive simultaneous saves',()=>{
   const base={works:[{id:'a',amount:1,date:'2026-10-28'}]};
@@ -47,4 +47,9 @@ test('legacy credentials are verified on the server and blocked users cannot log
   assert.equal(checkPassword('test-password',user),true);
   assert.equal(checkPassword('wrong',user),false);
   assert.equal(checkPassword('test-password',{...user,blocked:true}),false);
+});
+test('public users report password status without exposing credentials',()=>{
+  const safe=publicUser({id:'a',salt:'salt',passHash:'a'.repeat(64),hasPassword:false});
+  assert.equal(safe.hasPassword,true);assert.equal(safe.passHash,undefined);assert.equal(safe.salt,undefined);
+  assert.equal(publicUser({id:'b',hasPassword:true}).hasPassword,false);
 });

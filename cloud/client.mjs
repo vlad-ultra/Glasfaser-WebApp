@@ -1,4 +1,5 @@
 import {clone,equal,merge,diff,apply} from './shared.mjs';
+import {installUsers} from './users.mjs';
 
 export async function start(boot,bridge) {
   const tabId=sessionStorage.gfCloudTab||(sessionStorage.gfCloudTab=crypto.randomUUID());
@@ -134,5 +135,5 @@ export async function start(boot,bridge) {
   window.addEventListener('focus',()=>sync());
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync();});
   setInterval(()=>{if(!document.hidden)sync();},5000);
-  persist();bridge.render();sync();
+  installUsers(boot,bridge);persist();bridge.render();sync();
 }

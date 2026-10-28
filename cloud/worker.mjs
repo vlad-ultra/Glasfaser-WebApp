@@ -68,6 +68,7 @@ async function patch(request,env,user) {
       if(user.role!=='admin')fail('Только администратор может менять пользователей.',403);
       if(op.id===user.id&&(!op.value||op.value.blocked||op.value.role!=='admin'))fail('Нельзя удалить, заблокировать или понизить свою учётную запись.',403);
       if(op.value) {
+        delete op.value.hasPassword; // Computed from credentials, never trusted from a client.
         if(typeof op.value.login!=='string'||!op.value.login.trim()||op.value.login.length>120||!['admin','editor','viewer'].includes(op.value.role))fail('Invalid user');
         if('passHash' in op.value&&!/^[a-f0-9]{64}$/.test(op.value.passHash))fail('Invalid password hash');
         if('salt' in op.value&&(typeof op.value.salt!=='string'||!op.value.salt||op.value.salt.length>200))fail('Invalid salt');
@@ -81,6 +82,9 @@ async function patch(request,env,user) {
     if(op.value===null)statements.push(env.DB.prepare('DELETE FROM records WHERE collection=? AND id=? AND (SELECT commit_id FROM meta WHERE id=1)=?').bind(op.collection,op.id,commit));
     else statements.push(env.DB.prepare(`INSERT INTO records(collection,id,payload) SELECT ?,?,? WHERE (SELECT commit_id FROM meta WHERE id=1)=? ON CONFLICT(collection,id) DO UPDATE SET payload=${op.collection==='users'?"json_patch(records.payload,excluded.payload)":"excluded.payload"}`).bind(op.collection,op.id,JSON.stringify(op.value),commit));
   }
+  const ownPassword=operations.find(op=>op.collection==='users'&&op.id===user.id&&op.value?.passHash)?.value.passHash;
+  const currentToken=/(?:^|;\s*)gfcloud=([a-f0-9]{64})(?:;|$)/.exec(request.headers.get('Cookie')||'')?.[1];
+  if(ownPassword&&currentToken)statements.push(env.DB.prepare('UPDATE sessions SET credential_hash=? WHERE token_hash=? AND (SELECT commit_id FROM meta WHERE id=1)=?').bind(ownPassword,digest(currentToken),commit));
   const result=await env.DB.batch(statements);
   if(!result[0].results.length)return json({error:'revision_conflict'},409);
   return json({revision:revision+1});

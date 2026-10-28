@@ -11,5 +11,5 @@ export function checkPassword(password,user) {
 }
 export function publicUser(user) {
   const {salt,passHash,...safe}=user;
-  return safe;
+  return {...safe,hasPassword:!!(user.salt&&user.passHash)};
 }
