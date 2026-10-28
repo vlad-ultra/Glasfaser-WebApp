@@ -1,5 +1,12 @@
 # Общая облачная база Glasfaser
 
+Опубликовано 28.10.2026: https://glasfaser-test.glasfaser-cloud.workers.dev/
+
+Worker: `glasfaser-test`; D1: `glasfaser-test`
+(`62bcea1a-78a0-4e8b-82e0-2773b885c272`). Импортировано 4 404 записи из
+`Glasfaser_Backup_2026-10-28.gfb`. Используется существующая авторизация
+приложения; рабочие данные не опубликованы в GitHub.
+
 Подготовлен отдельный вариант приложения для Cloudflare Workers + D1. Исходный
 `index.html` и работающая публикация GitHub Pages сохраняют прежнее поведение.
 Общая база работает по адресу Worker после его публикации. В GitHub Pages
@@ -38,8 +45,7 @@ npx wrangler login
 npx wrangler d1 create glasfaser-test --jurisdiction eu
 ```
 
-Скопировать возвращённый UUID вместо нулевого `database_id` в `wrangler.jsonc`.
-Добавить `"jurisdiction": "eu"` к D1 binding для базы, созданной в EU jurisdiction.
+Скопировать возвращённый UUID в `database_id` в `wrangler.jsonc`.
 Если аккаунтов несколько, явно указать нужный `account_id` в конфигурации.
 
 ```sh
