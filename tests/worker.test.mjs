@@ -2,6 +2,7 @@ import {test,before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {Miniflare,convertV4MiniflareOptions} from 'miniflare';
 import {legacyHash} from '../cloud/auth.mjs';
 
@@ -12,7 +13,7 @@ const state=async()=>{const r=await request('/api/state');assert.equal(r.status,
 const change=(revision,operations)=>request('/api/changes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision,operations})});
 before(async()=>{
   execFileSync(process.execPath,['scripts/build.mjs']);
-  execFileSync('node_modules/.bin/wrangler',['deploy','--dry-run','--outdir','.private/test-bundle'],{env:{...process.env,WRANGLER_SEND_METRICS:'false'},stdio:'pipe'});
+  execFileSync(process.execPath,[fileURLToPath(new URL('../node_modules/wrangler/bin/wrangler.js',import.meta.url)),'deploy','--dry-run','--outdir','.private/test-bundle'],{env:{...process.env,WRANGLER_SEND_METRICS:'false'},stdio:'pipe'});
   mf=new Miniflare(convertV4MiniflareOptions({modules:true,scriptPath:'.private/test-bundle/worker.js',compatibilityDate:'2026-10-28',compatibilityFlags:['nodejs_compat'],d1Databases:['DB'],serviceBindings:{ASSETS:async req=>new Response(await readFile(new URL('../dist/index.html',import.meta.url),'utf8'),{headers:{'Content-Type':'text/html'}})}}));
   db=await mf.getD1Database('DB');
   const schema=await readFile(new URL('../cloud/migrations/0001.sql',import.meta.url),'utf8');

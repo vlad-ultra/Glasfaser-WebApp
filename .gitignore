@@ -6,3 +6,9 @@ dist/
 .env*
 *.gfb
 *.gfbk
+wrangler.migration.json
+wrangler.account.json
+*.sql
+*.bundle
+*.zip
+!cloud/migrations/*.sql
