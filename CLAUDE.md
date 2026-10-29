@@ -54,4 +54,6 @@ process.execPath и `node_modules/wrangler/bin/wrangler.js`, без shell-стр
 
 Не коммитить `.private/`, `.gfb`, SQL-дампы, токены. Не печатать содержимое базы
 и парольные хеши в лог. Полный снимок и исходники передаются в ZIP закрытого
-GitHub Release `migration-2026-10-28`; публичный доступ к нему не включать.
+GitHub Release `migration-2026-10-28` в отдельном репозитории
+`vlad-ultra/Glasfaser-WebApp-Backups`; публичный доступ к резервным копиям не включать.
+Исходный код vlad-ultra/Glasfaser-WebApp временно публичный для другого аккаунта.

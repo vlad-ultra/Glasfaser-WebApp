@@ -6,7 +6,7 @@
 
 ## 1. Скачать проект
 
-В закрытом репозитории `vlad-ultra/Glasfaser-WebApp`, раздел Releases,
+В закрытом репозитории `vlad-ultra/Glasfaser-WebApp-Backups`, раздел Releases,
 скачать `Glasfaser-Migration-Windows-2026-10-28.zip` из релиза
 `migration-2026-10-28`. Нужен вход GitHub с доступом к репозиторию.
 
